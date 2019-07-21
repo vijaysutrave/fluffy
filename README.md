@@ -19,6 +19,9 @@
 - prosemirror
 - flaticon
 
+### todo
+- [ ] add tests
+
 ### license
 Apache 2.0 ©
 

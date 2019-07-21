@@ -7,3 +7,20 @@
 </p>
 
 
+### highlights
+- featuring a rich text editor to add dates, tasks, links, headings, etc.
+- simple, clean, easy interface
+- auto saves all information
+- add pages and save more
+- syncs across all signed in chrome devices
+
+### credits
+- atlaskit
+- prosemirror
+- flaticon
+
+### license
+Apache 2.0 ©
+
+### author
+[vijaysutrave](https://github.com/vijaysutrave) (vijaysutrave01@gmail.com)

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import styled from 'styled-components';
-import { TabIdentifiers } from './Fluffy';
+import { TabIdentifiers } from './types';
 import dayjs from 'dayjs';
 import { HTMLAttributes } from 'react';
 
@@ -8,18 +8,19 @@ export type Props = {
   page: TabIdentifiers;
   onTitleUpdate: (attrs: any) => void;
   onPageChange: (attrs: any) => void;
+  onPageDelete: (attrs: any) => void;
 }
 
-const Wrapper: React.ComponentClass<{isActive: boolean} & HTMLAttributes<{}>, any> = styled.div`
-  border-bottom: 1px solid #ececec;
-  padding: 10px;
+const Wrapper = styled.div`
   margin: 5px 0;
-  background-color: ${(p: {isActive: boolean}) => p.isActive ?  '#e8e8e8' : ''};
-  cursor: pointer;
+  border-bottom: 1px solid #ececec;
+`;
 
-  &: hover {
-    background-color: #f1f1f1;
-  }
+const Item: React.ComponentClass<{ isActive: boolean } & HTMLAttributes<{}>, any> = styled.div`
+  padding: 10px 15px;
+  margin: 10px 0;
+  background-color: ${(p: { isActive: boolean }) => p.isActive ? '#ffdb286b;' : ''};
+  cursor: pointer;
 `;
 
 const InputWrapper = styled.input`
@@ -30,7 +31,7 @@ const InputWrapper = styled.input`
   background-color: transparent;
 
   &:focus {
-    outline: none
+    outline: none;
   }
 `
 
@@ -39,7 +40,13 @@ const HeadingWrapper = styled.div`
   padding: 5px 0;
 `;
 
-export class PageItem extends React.Component<Props, {title: string, created: string}> { 
+const DeleteIcon = styled.span`
+  float: right;
+`;
+
+const TrashIcon = styled.img``;
+
+export class PageItem extends React.Component<Props, { title: string, created: string }> {
   constructor(props: Props) {
     super(props);
 
@@ -49,11 +56,12 @@ export class PageItem extends React.Component<Props, {title: string, created: st
       created: dayjs(props.page.lastModified).format('DD MMM')
     }
     this.onPageChange = this.onPageChange.bind(this);
+    this.onPageDelete = this.onPageDelete.bind(this);
   }
 
   onPageChange(e: any) {
     const id = e.currentTarget.dataset.id;
-    this.props.onPageChange({pageId: +id});
+    this.props.onPageChange({ pageId: +id });
   }
 
   onChange(e: any) {
@@ -64,15 +72,29 @@ export class PageItem extends React.Component<Props, {title: string, created: st
     })
   }
 
+  onPageDelete(e: any) {
+    e.stopPropagation();
+    this.props.onPageDelete({});
+  }
+
   render() {
     const { page } = this.props;
     const { title } = this.state;
     return (
-      <Wrapper isActive={page.active_tab} onClick={this.onPageChange} data-id={page.id}>
-        {page.active_tab ? (<InputWrapper value={title} onChange={this.onChange} />): (
-          <HeadingWrapper>{title}</HeadingWrapper>
-        )}
-        <span>{this.state.created}</span>
+      <Wrapper>
+        <Item isActive={page.active_tab} onClick={this.onPageChange} data-id={page.id}>
+          {page.active_tab ? (<InputWrapper value={title} onChange={this.onChange} />) : (
+            <HeadingWrapper>{title}</HeadingWrapper>
+          )}
+          <span>{this.state.created}</span>
+          {
+            page.active_tab && (
+              <DeleteIcon>
+                <TrashIcon src="../../assets/trash.svg" height="14" alt="Delete" onClick={this.onPageDelete} title="Delete page" />
+              </DeleteIcon>
+            )
+          }
+        </Item>
       </Wrapper>
     )
   }

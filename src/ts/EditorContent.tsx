@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import { Editor, WithEditorActions, EditorContext } from '@atlaskit/editor-core';
 import { CHANGE } from './constants';
 
-
 export type Props = {
   onChange: (action: any, attrs: any) => void;
   defaultValue: string;
@@ -11,14 +10,11 @@ export type Props = {
 }
 
 const Wrapper = styled.div`
-
+  height: 100vh;
+  overflow: auto;
 `;
 
-
-export class EditorContent extends React.Component<Props, {}> {
-  private currValue: object | undefined;
-  private actions: any;
-
+export class EditorContent extends React.PureComponent<Props, {}> {
   constructor(props: Props) {
     super(props);
 
@@ -50,6 +46,7 @@ export class EditorContent extends React.Component<Props, {}> {
           allowTasksAndDecisions={true}
           allowCodeBlocks={true}
           onChange={this.onChange}
+          allowLayouts={true}
         />
       </Wrapper>
     )

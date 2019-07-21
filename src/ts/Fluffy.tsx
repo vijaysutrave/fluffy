@@ -1,11 +1,11 @@
-import styled from 'styled-components';
 import * as React from 'react';
 import { Sidebar } from './Sidebar';
 import { EditorContent } from './EditorContent';
-import { CHANGE } from './constants';
+import { CHANGE, UPDATE_TIMER } from './constants';
 import { WithEditorActions, EditorContext } from '@atlaskit/editor-core';
-// import console = require('console');
-
+import { createDefaultTab } from './utils';
+import { TabIdentifiers, FluffyTabs } from './types';
+import styled from 'styled-components';
 
 declare var chrome: any;
 
@@ -28,34 +28,21 @@ const ContentArea = styled.div`
   float: right;
 `;
 
-export type TabIdentifiers = {
-  active_tab: boolean;
-  content: string | object;
-  id: number;
-  title: string;
-  lastModified: Date;
-}
-
-
-export type FluffyTabs = TabIdentifiers[];
+const FluffyIcon = styled.span`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+`;
 
 export type ACTION = 'UPDATE_CONTENT' | 'DELETE_PAGE' | 'UPDATE_TITLE' | 'ADD_PAGE' | 'PAGE_CHANGE';
 
-const createDefaultTab = (): TabIdentifiers => {
-  return {
-    content: { "version": 1, "type": "doc", "content": [{ "type": "paragraph", "content": [] }] },
-    title: 'Untitled',
-    id: Math.floor(Math.random() * 10000000),
-    lastModified: new Date(),
-    active_tab: true
-  }
-}
-
-export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undefined }> {
+export class Fluffy extends React.Component<{}, { tabs?: TabIdentifiers[] }> {
   private activeTab: object | undefined;
   private actions: any;
   private onPageAdd: (attrs: any) => void;
   private onPageChange: (attrs: any) => void;
+  private onPageDelete: () => void;
+  private timer?: number;
 
   constructor(props: {}) {
     super(props);
@@ -64,11 +51,13 @@ export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undef
     };
     this.onChange = this.onChange.bind(this);
     this.onPageChange = this.onChange.bind(this, 'PAGE_CHANGE');
-    this.onPageAdd = this.onChange.bind(this, 'ADD_PAGE')
+    this.onPageAdd = this.onChange.bind(this, 'ADD_PAGE');
+    this.onPageDelete = this.onChange.bind(this, 'DELETE_PAGE');
+    this.onPageDeleteConfirm = this.onPageDeleteConfirm.bind(this);
   }
 
   componentDidMount() {
-    (chrome as any).storage.sync.get(['fluffy_tabs'], (result: any) => {
+    chrome.storage.sync.get(['fluffy_tabs'], (result: any) => {
       if (!result.fluffy_tabs) {
         const newValue = [createDefaultTab()];
         (chrome as any).storage.sync.set({ 'fluffy_tabs': JSON.stringify(newValue) });
@@ -88,22 +77,39 @@ export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undef
     });
   }
 
+  onPageDeleteConfirm() {
+    const result = window.confirm('Do you really want to delete the page? :(');
+    if (result) {
+      this.onPageDelete();
+    }
+  }
+
   getActiveTab() {
     return this.state.tabs!.find(tab => tab.active_tab);
   }
 
-  onChange(action: ACTION, attrs: { value?: any, title?: string, deleteId?: number, pageId: number }) {
+  onChange(action: ACTION, attrs?: { value?: any, title?: string, deleteId?: number, pageId: number }) {
     let updatedValue = this.state.tabs;
-    let shouldRerender = false;
     let shouldReplaceDoc = false;
 
     switch (action) {
       case CHANGE.DELETE_PAGE: {
-
+        const getActiveTabs = this.state.tabs!.filter(tab => tab.active_tab === false);
+        if (!getActiveTabs.length) {
+          updatedValue = [createDefaultTab()];
+          shouldReplaceDoc = true;
+          break;
+        }
+        updatedValue = getActiveTabs.map((tab, idx) => idx === 0 ? {
+          ...tab,
+          active_tab: true,
+        } : tab);
+        shouldReplaceDoc = true;
+        break;
       }
 
       case CHANGE.PAGE_CHANGE: {
-        if (!attrs.pageId) {
+        if (!attrs || !attrs.pageId) {
           break;
         }
         updatedValue = this.state.tabs!.map(tab => {
@@ -122,13 +128,12 @@ export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undef
           }
           return tab;
         });
-        shouldRerender = true;
         shouldReplaceDoc = true;
         break;
       }
 
       case CHANGE.UPDATE_CONTENT: {
-        if (!attrs.value) {
+        if (!attrs || !attrs.value) {
           break;
         }
 
@@ -150,14 +155,13 @@ export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undef
           } : tab;
         });
         updatedValue = [createDefaultTab()].concat(updatedValue)
-        shouldRerender = true;
         shouldReplaceDoc = true;
         break;
       }
 
 
       case CHANGE.UPDATE_TITLE: {
-        if (!attrs.title) {
+        if (!attrs || !attrs.title) {
           break;
         }
 
@@ -172,19 +176,25 @@ export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undef
       }
     }
 
-    (chrome as any).storage.sync.set({ 'fluffy_tabs': JSON.stringify(updatedValue) }, (value: any) => {
-      console.log('value is set ', updatedValue)
-    });
+    this.debouncedSaveState(updatedValue);
     this.setState({
       tabs: updatedValue
     }, () => {
       if (shouldReplaceDoc) {
         this.actions.replaceDocument(JSON.stringify(this.getActiveTab()!.content))
-
       }
     });
   }
 
+  debouncedSaveState(updatedValue?: TabIdentifiers[]) {
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
+
+    this.timer = setTimeout(() => {
+      (chrome as any).storage.sync.set({ 'fluffy_tabs': JSON.stringify(updatedValue) });
+    }, UPDATE_TIMER);
+  }
 
   render() {
     if (!this.state.tabs) {
@@ -204,6 +214,7 @@ export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undef
                     pageIds={this.state.tabs!}
                     onChange={this.onChange}
                     onPageAdd={this.onPageAdd}
+                    onPageDelete={this.onPageDeleteConfirm}
                   />
                 </LeftSidebar>
                 <ContentArea>
@@ -218,6 +229,9 @@ export class Fluffy extends React.Component<{}, { tabs: TabIdentifiers[] | undef
             )
           }} />
         </EditorContext>
+        <FluffyIcon>
+          <img src="../../assets/fluffy.png" width="60" />
+        </FluffyIcon>
       </Wrapper>
     )
   }

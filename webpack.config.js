@@ -1,16 +1,25 @@
 const path = require("path");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+
 
 module.exports = {
   entry: {
     editor: path.join(__dirname, "src/ts/editor.tsx"),
+    tracking: path.join(__dirname, "src/ts/tracking.ts"),
   },
   output: {
     path: path.join(__dirname, "public/js"),
-    filename: "[name].js"
+    filename: "[name].js",
   },
-  optimization:{
-    minimize: false, // <---- disables uglify.
-    // minimizer: [new UglifyJsPlugin()] if you want to customize it.
+  optimization: {
+    minimizer: [new UglifyJsPlugin({
+      uglifyOptions: {
+        output: {
+          ascii_only: true
+        },
+      },
+    })],
   },
   module: {
     rules: [
@@ -36,6 +45,12 @@ module.exports = {
       }
     ]
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      filename: 'fluffy.html',
+      template: 'src/html/fluffy.html'
+    })
+  ],
   resolve: {
     extensions: [".ts", ".tsx", ".js"]
   }

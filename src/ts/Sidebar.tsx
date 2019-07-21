@@ -1,19 +1,20 @@
 import * as React from 'react';
 import styled from 'styled-components'
-import { TabIdentifiers } from './Fluffy';
+import { TabIdentifiers } from './types';
 import { PageItem } from './PageItem';
 import { CHANGE } from './constants';
 
-
-export type Props = {
+export type SidebarProps = {
   onPageChange: (id: number) => void;
   pageIds: TabIdentifiers[];
   onChange: (action: any, attrs: any) => void;
   onPageAdd: (attrs: any) => void;
+  onPageDelete: (attrs: any) => void;
 }
 
 const Wrapper = styled.div`
-
+  max-height: 100vh;
+  overflow: auto;
 `;
 
 const ActionsHeader = styled.div`
@@ -22,7 +23,6 @@ const ActionsHeader = styled.div`
   align-items: center;
   padding: 0 20px;
 `
-
 
 const AddIcon = styled.div`
   flex-grow: 1;
@@ -38,30 +38,24 @@ const PageTabs = styled.div`
   padding: 10px;
 `;
 
-
-export class Sidebar extends React.Component<Props, {}> {
+export class Sidebar extends React.Component<SidebarProps, {}> {
   private onTitleChange: (attrs: any) => void;
-  constructor(props: Props) {
+  constructor(props: SidebarProps) {
     super(props);
-
-    this.addPage = this.addPage.bind(this);
-    this.state = {
-      pageIds: []
-    }
     this.onTitleChange = props.onChange.bind(this, CHANGE.UPDATE_TITLE)
-  }
-
-  componentDidMount() {
-
-  }
-
-  addPage() {
-
   }
 
   renderPageTabs() {
     return this.props.pageIds.map(page => {
-      return <PageItem key={page.id} page={page} onTitleUpdate={this.onTitleChange} onPageChange={this.props.onPageChange}/>
+      return (
+        <PageItem
+          key={page.id}
+          page={page}
+          onTitleUpdate={this.onTitleChange}
+          onPageChange={this.props.onPageChange}
+          onPageDelete={this.props.onPageDelete}
+        />
+      )
     });
   }
 
@@ -70,7 +64,7 @@ export class Sidebar extends React.Component<Props, {}> {
       <Wrapper>
         <ActionsHeader>
           <AddIcon>
-            <PlusIcon src="../../assets/add.svg" height="20" onClick={this.props.onPageAdd} />
+            <PlusIcon src="../../assets/add.svg" height="20" onClick={this.props.onPageAdd} title="Add page" />
           </AddIcon>
         </ActionsHeader>
         <PageTabs>

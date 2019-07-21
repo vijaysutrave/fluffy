@@ -2,18 +2,13 @@
 	"manifest_version": 2,
 	"name": "Fluffy",
 	"short_name": "Fluffy",
-	"version": "0.1.0",
-	"description": "Simple, clean and easy note taking Chrome extension",
-	// "background": {
-		// "scripts": ["background.js"]
-    // },
-    "chrome_url_overrides" : {
-        "newtab": "public/html/editor.html"
-    },
+	"version": "1.0.0",
+	"description": "Fluffy - Simple, clean and easy note taking Chrome extension",
+	"chrome_url_overrides": {
+		"newtab": "public/js/fluffy.html"
+	},
 	"content_security_policy": "script-src 'self' https://ssl.google-analytics.com; object-src 'self'",
-	"permissions": ["storage"]
-	// "content_scripts": [{
-	// 	"matches": ["http://*/*", "https://*/*"],
-	// 	"run_at": "document_start"
-	// }]
+	"permissions": [
+		"storage"
+	]
 }
